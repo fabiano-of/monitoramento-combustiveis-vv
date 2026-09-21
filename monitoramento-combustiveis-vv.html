@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Preço dos combustíveis em Vila Velha/ES</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f2f5f7; --surface:#ffffff; --ink:#14232e; --muted:#5a6b78; --line:#d5dde3;
+  --board:#0f1c26; --led:#ffb627; --accent:#0b6e8a; --accent-ink:#ffffff; --good:#1c7a4d; --bad:#b4372b;
+  --c1:#0b6e8a; --c2:#d9822b; --c3:#1c7a4d; --c4:#8a4bb0; --c5:#b4372b;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c151c; --surface:#142330; --ink:#e7eef3; --muted:#9db0bd; --line:#26394a;
+    --accent:#4fb6d3; --accent-ink:#06202b; --good:#5cc98f; --bad:#ff8a7c;
+    --c1:#4fb6d3; --c2:#f0a25a; --c3:#5cc98f; --c4:#c393e6; --c5:#ff8a7c;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c151c; --surface:#142330; --ink:#e7eef3; --muted:#9db0bd; --line:#26394a;
+  --accent:#4fb6d3; --accent-ink:#06202b; --good:#5cc98f; --bad:#ff8a7c;
+  --c1:#4fb6d3; --c2:#f0a25a; --c3:#5cc98f; --c4:#c393e6; --c5:#ff8a7c;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 "Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",Impact,sans-serif;line-height:1.05;margin:0}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+
+/* hero / price board */
+.hero{background:var(--board);color:#e9f0f4;padding:44px 0 36px}
+.hero h1{font-size:clamp(40px,7vw,68px);font-weight:700;letter-spacing:.01em;max-width:14ch}
+.hero p{max-width:56ch;color:#b8c8d2;margin:14px 0 0}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2px;margin-top:30px;background:#233645;border:2px solid #233645;border-radius:6px;overflow:hidden}
+.board div{background:#0a141c;padding:14px 16px}
+.board .lbl{font-size:15px;color:#9db0bd}
+.board .val{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:54px;line-height:1;color:var(--led);letter-spacing:.02em}
+.board .val small{font-size:22px;color:#c89a2a;margin-right:4px}
+.board .sub{font-size:14px;color:#7f93a1}
+
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto}
+nav a{padding:12px 12px;text-decoration:none;color:var(--ink);white-space:nowrap;font-weight:600;font-size:15px;border-bottom:3px solid transparent}
+nav a:hover{border-bottom-color:var(--accent)}
+
+section{padding:44px 0 8px}
+section h2{font-size:38px;font-weight:700}
+section .lead{color:var(--muted);max-width:66ch;margin:8px 0 20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:14px}
+td.num,th.num{text-align:right}
+.tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:13px;font-weight:600}
+.tag.min{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.tag.max{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.controls{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px}
+label{display:flex;flex-direction:column;font-size:14px;color:var(--muted);gap:4px}
+select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:8px 10px;min-width:210px}
+.chartbox{position:relative;height:340px}
+.note{font-size:14px;color:var(--muted);margin:10px 0 0}
+button{font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:5px;padding:9px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+
+/* ---------- celulares e telas pequenas ---------- */
+@media (max-width:820px){
+  .hero{padding:32px 0 28px}
+  .hero h1{max-width:none}
+  section{padding:34px 0 4px}
+  section h2{font-size:32px}
+}
+@media (max-width:640px){
+  body{font-size:16px}
+  .wrap{padding:0 14px}
+  .hero{padding:24px 0 22px}
+  .hero p{font-size:16px}
+  .board{grid-template-columns:repeat(2,1fr);margin-top:22px}
+  .board div{padding:12px}
+  .board .lbl{font-size:14px}
+  .board .val{font-size:40px}
+  .board .val small{font-size:18px}
+  nav a{padding:12px 10px;font-size:14px}
+  section h2{font-size:28px}
+  section .lead{margin-bottom:14px}
+  .panel{padding:12px}
+  .controls{flex-direction:column;gap:10px}
+  .controls label{width:100%}
+  select{width:100%;min-width:0;font-size:16px}
+  .chartbox{height:300px}
+  /* tabelas viram cartões */
+  .panel.scroll{padding:0;background:transparent;border:0}
+  table,thead,tbody,tr,td{display:block;width:100%}
+  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  tbody tr{background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:10px;padding:6px 12px}
+  td,td.num{display:flex;justify-content:space-between;align-items:baseline;gap:14px;text-align:right;white-space:normal;padding:7px 0;border-bottom:1px solid var(--line)}
+  td:last-child{border-bottom:0}
+  td::before{content:attr(data-label);color:var(--muted);font-size:14px;text-align:left;flex:0 0 auto}
+  #t4{margin:0}
+  .panel > .scroll{overflow:visible}
+}
+@media (max-width:380px){
+  .board .val{font-size:34px}
+  section h2{font-size:25px}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div style="color:#b8c8d2;font-size:16px;margin-bottom:14px;line-height:1.5">
+      <strong style="color:#e9f0f4">Projeto Extensionista UVV</strong> · Arquitetura de Dados Relacionais I · Universidade Vila Velha<br>
+      Aluno: Fabiano Oliveira de Almeida França<br>
+      Fonte: ANP - Série Histórica (2026-01)
+    </div>
+    <h1>Quanto custa abastecer em Vila Velha</h1>
+    <p>Preços de gasolina, gasolina aditivada, etanol e diesel em 5 postos e 5 bairros, coletados de janeiro a junho de 2026. Consulte os menores preços, as médias e a evolução ao longo do tempo.</p>
+    <div class="board" id="board" aria-label="Preço médio de cada combustível"></div>
+  </div>
+</header>
+
+<nav aria-label="Seções">
+  <div class="wrap">
+    <a href="#graficos">Gráficos</a>
+    <a href="#menor-maior">Menor e maior preço</a>
+    <a href="#medias">Preço médio por posto</a>
+    <a href="#recente">Preço mais recente</a>
+    <a href="#evolucao">Evolução em um posto</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<section id="graficos">
+  <h2>Gráficos</h2>
+  <p class="lead">Como os preços mudaram ao longo do semestre.</p>
+  <div class="panel">
+    <h3>Preço médio de cada combustível</h3>
+    <p class="note" style="margin:4px 0 12px">Média dos 5 postos em cada mês.</p>
+    <div class="chartbox"><canvas id="g1" role="img" aria-label="Gráfico de linhas com o preço médio mensal de cada combustível"></canvas></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>Preço médio por posto</h3>
+    <div class="controls" style="margin-top:12px">
+      <label>Combustível<select id="selComb2"></select></label>
+    </div>
+    <div class="chartbox"><canvas id="g2" role="img" aria-label="Gráfico de linhas com a evolução do preço em cada posto"></canvas></div>
+    <p class="note">Cada ponto é uma coleta do posto. Os meses sem coleta são ligados por linha.</p>
+  </div>
+</section>
+
+<section id="menor-maior">
+  <h2>Menor e maior preço de cada combustível</h2>
+  <p class="lead">Entre todas as 25 coletas, veja onde e quando cada combustível teve o preço mais baixo e o mais alto.</p>
+  <div class="panel scroll"><table id="t1"></table></div>
+  <p class="note">Quando dois registros empatam no menor ou maior valor, todos aparecem.</p>
+</section>
+
+<section id="medias">
+  <h2>Preço médio por posto</h2>
+  <p class="lead">Média de cada combustível em cada posto e quantas coletas entraram no cálculo.</p>
+  <div class="panel scroll"><table id="t2"></table></div>
+</section>
+
+<section id="recente">
+  <h2>Preço mais recente</h2>
+  <p class="lead">O último valor registrado para cada combustível em cada posto.</p>
+  <div class="panel scroll"><table id="t3"></table></div>
+</section>
+
+<section id="evolucao">
+  <h2>Evolução do preço em um posto</h2>
+  <p class="lead">Escolha um posto e um combustível para ver os preços em ordem de data.</p>
+  <div class="panel">
+    <div class="controls">
+      <label>Posto<select id="selPosto"></select></label>
+      <label>Combustível<select id="selComb"></select></label>
+    </div>
+    <div class="scroll"><table id="t4"></table></div>
+  </div>
+</section>
+
+</main>
+
+
+<script>
+const COMBS = ["Gasolina","Gasolina aditivada","Etanol","Diesel"];
+// [posto, bairro, data(dd/mm/aaaa), gasolina, aditivada, etanol, diesel]
+const RAW = [
+["Posto Champagnat","Praia da Costa","07/01/2026",6.39,6.69,4.59,6.09],
+["Posto Champagnat","Praia da Costa","10/02/2026",6.29,6.69,4.79,6.29],
+["Posto Champagnat","Praia da Costa","13/04/2026",6.59,6.79,4.99,6.99],
+["Posto Champagnat","Praia da Costa","02/06/2026",6.49,6.79,4.99,6.99],
+["Posto Champagnat","Praia da Costa","30/06/2026",6.69,6.89,4.99,6.99],
+["Arara Azul Rede de Postos","Praia de Itaparica","07/01/2026",6.29,6.49,4.59,5.95],
+["Arara Azul Rede de Postos","Praia de Itaparica","24/02/2026",6.17,6.37,4.59,5.95],
+["Arara Azul Rede de Postos","Praia de Itaparica","01/04/2026",6.46,6.76,4.95,6.98],
+["Arara Azul Rede de Postos","Praia de Itaparica","25/05/2026",6.69,6.69,5.09,6.98],
+["Arara Azul Rede de Postos","Praia de Itaparica","29/06/2026",6.67,6.92,4.59,6.74],
+["Posto Itapoã","Itapoã","06/01/2026",6.29,6.59,4.68,5.99],
+["Posto Itapoã","Itapoã","03/03/2026",6.09,6.39,4.78,5.99],
+["Posto Itapoã","Itapoã","15/04/2026",6.46,6.66,4.99,6.65],
+["Posto Itapoã","Itapoã","26/05/2026",6.39,6.59,4.67,6.78],
+["Posto Itapoã","Itapoã","22/06/2026",6.67,6.87,4.55,6.78],
+["Posto Perim","Itaparica","07/01/2026",6.29,6.49,4.89,6.19],
+["Posto Perim","Itaparica","10/02/2026",6.19,6.39,4.89,6.19],
+["Posto Perim","Itaparica","13/04/2026",6.49,6.69,5.19,6.99],
+["Posto Perim","Itaparica","18/05/2026",6.49,6.69,5.19,6.99],
+["Posto Perim","Itaparica","29/06/2026",6.69,6.89,4.89,6.99],
+["Auto Posto RTT","Divino Espírito Santo","14/01/2026",6.29,6.39,4.69,5.99],
+["Auto Posto RTT","Divino Espírito Santo","24/02/2026",6.29,6.39,4.99,5.99],
+["Auto Posto RTT","Divino Espírito Santo","20/04/2026",6.45,6.75,5.09,6.99],
+["Auto Posto RTT","Divino Espírito Santo","26/05/2026",6.37,6.57,4.99,6.99],
+["Auto Posto RTT","Divino Espírito Santo","30/06/2026",6.54,6.84,4.99,6.99],
+];
+// Endereços não constam no trabalho da AOP1: preencha aqui quando tiver o dado da ANP.
+const ENDERECO = {
+  "Posto Champagnat":"", "Arara Azul Rede de Postos":"", "Posto Itapoã":"", "Posto Perim":"", "Auto Posto RTT":""
+};
+
+// normaliza em registros (100 linhas: 25 coletas x 4 combustíveis)
+const REG = [];
+RAW.forEach(r=>{
+  const [d,m,a] = r[2].split("/");
+  const iso = `${a}-${m}-${d}`;
+  COMBS.forEach((c,i)=>REG.push({posto:r[0],bairro:r[1],data:r[2],iso,comb:c,valor:r[3+i]}));
+});
+const POSTOS = [...new Set(RAW.map(r=>r[0]))];
+const brl = v => "R$ " + v.toFixed(2).replace(".",",");
+const end = p => ENDERECO[p] || "não informado";
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function table(el, head, rows, numCols=[]){
+  el.innerHTML = "<thead><tr>"+head.map((h,i)=>`<th class="${numCols.includes(i)?'num':''}">${h}</th>`).join("")+"</tr></thead><tbody>"+
+    rows.map(r=>"<tr>"+r.map((c,i)=>`<td data-label="${head[i]}" class="${numCols.includes(i)?'num':''}">${c}</td>`).join("")+"</tr>").join("")+"</tbody>";
+}
+
+// quadro do topo: média geral por combustível
+(function(){
+  const b = document.getElementById("board");
+  b.innerHTML = COMBS.map(c=>{
+    const v = REG.filter(r=>r.comb===c).map(r=>r.valor);
+    const m = v.reduce((a,x)=>a+x,0)/v.length;
+    return `<div><div class="lbl">${c}</div><div class="val"><small>R$</small>${m.toFixed(2).replace(".",",")}</div><div class="sub">média de ${v.length} registros</div></div>`;
+  }).join("");
+})();
+
+// Consulta I
+(function(){
+  const rows=[];
+  COMBS.forEach(c=>{
+    const l = REG.filter(r=>r.comb===c);
+    const mn = Math.min(...l.map(r=>r.valor)), mx = Math.max(...l.map(r=>r.valor));
+    l.filter(r=>r.valor===mn).forEach(r=>rows.push([c,'<span class="tag min">Menor</span>',r.posto,r.bairro,brl(r.valor),r.data]));
+    l.filter(r=>r.valor===mx).forEach(r=>rows.push([c,'<span class="tag max">Maior</span>',r.posto,r.bairro,brl(r.valor),r.data]));
+  });
+  table(document.getElementById("t1"),["Combustível","Preço","Posto","Bairro","Valor","Data da coleta"],rows,[4]);
+})();
+
+// Consulta II
+(function(){
+  const rows=[];
+  POSTOS.forEach(p=>COMBS.forEach(c=>{
+    const l = REG.filter(r=>r.posto===p&&r.comb===c);
+    const m = l.reduce((a,r)=>a+r.valor,0)/l.length;
+    rows.push([p,l[0].bairro,c,brl(m),l.length]);
+  }));
+  table(document.getElementById("t2"),["Posto","Bairro","Combustível","Preço médio","Amostras"],rows,[3,4]);
+})();
+
+// Consulta III
+(function(){
+  const rows=[];
+  POSTOS.forEach(p=>COMBS.forEach(c=>{
+    const l = REG.filter(r=>r.posto===p&&r.comb===c).sort((a,b)=>b.iso.localeCompare(a.iso));
+    rows.push([p,l[0].bairro,c,brl(l[0].valor),l[0].data]);
+  }));
+  table(document.getElementById("t3"),["Posto","Bairro","Combustível","Valor","Data da coleta"],rows,[3]);
+})();
+
+// Consulta IV
+const selP=document.getElementById("selPosto"), selC=document.getElementById("selComb"), selC2=document.getElementById("selComb2");
+selP.innerHTML = POSTOS.map(p=>`<option>${p}</option>`).join("");
+selC.innerHTML = selC2.innerHTML = COMBS.map(c=>`<option>${c}</option>`).join("");
+function q4(){
+  const l = REG.filter(r=>r.posto===selP.value&&r.comb===selC.value).sort((a,b)=>a.iso.localeCompare(b.iso));
+  let prev=null;
+  const rows = l.map(r=>{
+    let dif="—";
+    if(prev!==null){const d=r.valor-prev; dif=(d>0?"+":"")+d.toFixed(2).replace(".",","); }
+    prev=r.valor;
+    return [r.posto,r.bairro,r.comb,brl(r.valor),r.data,dif];
+  });
+  table(document.getElementById("t4"),["Posto","Bairro","Combustível","Valor","Data da coleta","Variação (R$)"],rows,[3,5]);
+}
+selP.onchange=selC.onchange=q4; q4();
+
+// Gráficos
+const MESES=["jan","fev","mar","abr","mai","jun"];
+let g1,g2;
+function palette(){return [cssVar("--c1"),cssVar("--c2"),cssVar("--c3"),cssVar("--c4"),cssVar("--c5")];}
+function baseOpts(){
+  const small=window.innerWidth<640;
+  const tick=cssVar("--muted"), grid=cssVar("--line");
+  return {responsive:true,maintainAspectRatio:false,spanGaps:true,
+    interaction:{mode:"nearest",intersect:false},
+    plugins:{legend:{labels:{color:cssVar("--ink"),boxWidth:small?10:14,font:{size:small?11:13}}},
+      tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${brl(c.parsed.y)}`}}},
+    scales:{x:{ticks:{color:tick},grid:{color:grid}},
+            y:{ticks:{color:tick,callback:v=>v.toFixed(2).replace(".",",")},grid:{color:grid},title:{display:!small,text:"R$ por litro",color:tick}}}};
+}
+function drawG1(){
+  const col=palette();
+  const datasets = COMBS.map((c,i)=>({label:c,borderColor:col[i],backgroundColor:col[i],tension:.25,pointRadius:4,
+    data:MESES.map((_,m)=>{
+      const l=REG.filter(r=>r.comb===c && parseInt(r.iso.slice(5,7))-1===m);
+      return l.length? l.reduce((a,r)=>a+r.valor,0)/l.length : null;
+    })}));
+  if(g1) g1.destroy();
+  g1=new Chart(document.getElementById("g1"),{type:"line",data:{labels:MESES,datasets},options:baseOpts()});
+}
+function drawG2(){
+  const col=palette();
+  const c=selC2.value;
+  const datasets = POSTOS.map((p,i)=>({label:p,borderColor:col[i],backgroundColor:col[i],tension:.25,pointRadius:4,
+    data:MESES.map((_,m)=>{
+      const l=REG.filter(r=>r.posto===p&&r.comb===c&&parseInt(r.iso.slice(5,7))-1===m);
+      return l.length? l.reduce((a,r)=>a+r.valor,0)/l.length : null;
+    })}));
+  if(g2) g2.destroy();
+  g2=new Chart(document.getElementById("g2"),{type:"line",data:{labels:MESES,datasets},options:baseOpts()});
+}
+selC2.onchange=drawG2;
+function drawAll(){drawG1();drawG2();}
+drawAll();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",drawAll);
+let _w=window.innerWidth;
+window.addEventListener("resize",()=>{ if((_w<640)!==(window.innerWidth<640)){_w=window.innerWidth;drawAll();} });
+</script>
+</body>
+</html>
